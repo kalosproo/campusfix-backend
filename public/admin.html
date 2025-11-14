@@ -1,50 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CampusFix Admin</title>
-  <style>
-    body{font-family:system-ui,Arial;margin:16px;background:#f6f8fb;color:#0b2545}
-    h1{margin:0 0 12px}
-    table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 8px 30px rgba(16,24,40,0.06)}
-    th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left}
-    th{background:linear-gradient(90deg,#0066ff,#4b4fe1);color:#fff}
-    button{padding:8px 10px;border-radius:8px;border:none;cursor:pointer}
-    .fix{background:#16a34a;color:#fff}
-    .img{max-width:120px;border-radius:8px}
-    a{display:inline-block;margin-bottom:12px}
-  </style>
+    <meta charset="UTF-8" />
+    <title>CampusFix Admin</title>
+    <style>
+        body{font-family:system-ui;background:#f9fafb;margin:0;padding:20px;color:#0b2545}
+        h2{margin-bottom:20px}
+        table{width:100%;border-collapse:collapse;margin-top:20px;background:#fff;border-radius:12px;overflow:hidden}
+        th,td{padding:12px;border-bottom:1px solid #e0e0e0;text-align:left}
+        th{background:#1570ef;color:#fff}
+        tr:hover{background:#f2f4f7}
+        .resolved{color:#22c55e;font-weight:600}
+    </style>
 </head>
+
 <body>
-  <a href="/">← Back</a>
-  <h1>Admin — CampusFix</h1>
-  <div id="tableWrap">Loading...</div>
+    <a href="/" style="text-decoration:none;font-size:14px;">← Back</a>
+    <h2>Admin — CampusFix</h2>
 
-  <script>
-    function escapeHtml(s){ if (s===null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Email</th><th>Building</th>
+                <th>Description</th><th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
 
-    async function load() {
-      const wrap = document.getElementById('tableWrap');
-      try {
-        const res = await fetch('/api/issues');
-        const rows = await res.json();
-        if (!Array.isArray(rows)) { wrap.innerText = 'Failed to load'; return; }
-        if (rows.length === 0) { wrap.innerHTML = '<div style="padding:12px">No reports</div>'; return; }
+    <script>
+        const API = "https://campusfix-backend-dqpp.onrender.com/admin";
 
-        let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Building</th><th>Description</th><th>Status</th><th>Action</th></tr></thead><tbody>';
-        rows.forEach(r => {
-          html += '<tr><td>' + r.id + '</td><td>' + escapeHtml(r.name) + '</td><td>' + escapeHtml(r.email) + '</td><td>' + escapeHtml(r.building) + '</td><td>' + escapeHtml(r.description) + '</td><td>' + (r.status === 'Resolved' ? 'Resolved' : 'Open') + '</td><td>' + (r.status === 'Open' ? '<form method="POST" action="/api/resolve/' + r.id + '"><button class="fix" type="submit">Mark Fixed</button></form>' : '—') + '</td></tr>';
-        });
-        html += '</tbody></table>';
-        wrap.innerHTML = html;
-      } catch (err) {
-        wrap.innerHTML = '<div style="padding:12px;color:#c00">Failed to load</div>';
-        console.error(err);
-      }
-    }
+        async function loadReports() {
+            const res = await fetch(API);
+            const data = await res.json();
 
-    load();
-  </script>
+            let html = "";
+            data.forEach(r => {
+                html += `
+                    <tr>
+                        <td>${r.id}</td>
+                        <td>${r.name}</td>
+                        <td>${r.email}</td>
+                        <td>${r.building}</td>
+                        <td>${r.description}</td>
+                        <td class="resolved">${r.status}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById("tbody").innerHTML = html;
+        }
+
+        loadReports();
+    </script>
 </body>
 </html>
