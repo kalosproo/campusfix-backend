@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CampusFix Mobile</title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,Roboto,Segoe UI,Arial;background:#f2f4f7;color:#0b2545}
+    .wrap{max-width:420px;margin:30px auto;padding:16px}
+    .card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(16,24,40,0.06)}
+    h1{margin:0 0 12px 0;text-align:center}
+    label{display:block;margin:8px 0 6px;font-weight:600}
+    input,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #e6eef8;margin-bottom:10px;font-size:15px}
+    textarea{min-height:100px;resize:vertical}
+    .btn{display:block;width:100%;padding:14px;border-radius:12px;background:#0066ff;color:#fff;text-align:center;font-weight:700;border:none}
+    .small{font-size:13px;color:#6b7a90;margin-top:8px;text-align:center}
+    .issue{background:#f8fbff;border-radius:12px;padding:12px;margin-top:12px;border:1px solid #e6eef8}
+    .issue img{max-width:100%;border-radius:10px;margin-top:8px}
+    .center{display:flex;justify-content:center;margin-top:12px}
+    a.link-btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#f1f5f9;color:#0b2545;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>CampusFix</h1>
+      <form id="reportForm" enctype="multipart/form-data" autocomplete="off">
+        <label>Name</label><input name="name" placeholder="Your name" required>
+        <label>Email (@svce.edu.in)</label><input name="email" placeholder="you@svce.edu.in" required>
+        <label>Building</label><input name="building" placeholder="Building (e.g. 7th)" required>
+        <label>Floor</label><input name="floor" placeholder="Floor (optional)">
+        <label>Room</label><input name="room" placeholder="Room (optional)">
+        <label>Category</label><input name="category" placeholder="Electrical, Plumbing...">
+        <label>Description</label><textarea name="description" placeholder="Describe the issue" required></textarea>
+        <input type="file" name="photo" accept="image/*">
+        <button class="btn" type="submit">Submit Issue</button>
+      </form>
+      <div class="small">Reports will be visible below</div>
+    </div>
+
+    <div id="issues" style="margin-top:12px"></div>
+
+    <div class="center"><a class="link-btn" href="/admin.html">Open Admin Dashboard</a></div>
+  </div>
+
+  <script>
+    function escapeHtml(s){
+      if(s===null||s===undefined) return "";
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    async function loadIssues(){
+      const container = document.getElementById('issues');
+      container.innerHTML = '';
+      try {
+        const res = await fetch('/api/issues');
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          container.innerHTML = '<div style="padding:12px;text-align:center;color:#6b7a90">No reports yet.</div>';
+          return;
+        }
+        data.forEach(i => {
+          const div = document.createElement('div');
+          div.className = 'issue';
+          div.innerHTML = '<strong>' + escapeHtml(i.category || 'General') + '</strong> - ' + escapeHtml(i.status) +
+                          '<div style="margin-top:8px">' + escapeHtml(i.description) + '</div>' +
+                          '<div style="margin-top:8px;color:#6b7a90;font-size:13px">' + escapeHtml(i.email) + '</div>' +
+                          (i.photo ? '<img src="' + escapeHtml(i.photo) + '" alt="photo">' : '');
+          container.appendChild(div);
+        });
+      } catch (err) {
+        container.innerHTML = '<div style="padding:12px;color:#c00">Failed to load reports.</div>';
+        console.error(err);
+      }
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', async function(e){
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const email = fd.get('email') || '';
+      if (!email.endsWith('@svce.edu.in')) { alert('Please use your SVCE email'); return; }
+      try {
+        const res = await fetch('/api/report', { method: 'POST', body: fd });
+        const j = await res.json();
+        if (j && j.error) { alert(j.error); }
+        else { alert('Submitted'); e.target.reset(); loadIssues(); }
+      } catch (err) {
+        alert('Submission failed'); console.error(err);
+      }
+    });
+
+    loadIssues();
+  </script>
+</body>
+</html>
